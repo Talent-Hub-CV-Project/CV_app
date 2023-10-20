@@ -16,6 +16,7 @@ pydantic-settings = "^2.0.3"
 sqlalchemy-utils = "^0.41.1"
 onnxruntime = "^1.16.1"
 onnx = "^1.14.1"
+plotly = "^5.17.0"
 
 
 [tool.poetry.group.dev.dependencies]
@@ -53,6 +54,7 @@ warn_return_any = true
 strict_equality = true
 plugins = [
     "pydantic.mypy",
+    "numpy.typing.mypy_plugin",
 ]
 ignore_missing_imports = false
 # --strict end
@@ -64,6 +66,9 @@ exclude = [
 module = [
     "ultralytics",
     "sqlalchemy_utils",
+    "gradio",
+    "plotly",
+    "plotly.graph_objects",
 ]
 ignore_missing_imports = true
 

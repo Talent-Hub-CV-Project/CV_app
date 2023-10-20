@@ -28,3 +28,12 @@ class PointRepo:
         if not point:
             raise ValueError(f"Point with id {point_id} not found")
         return point
+
+    @staticmethod
+    def get_points(session: Session | None = None) -> list[Point]:
+        if not session:
+            session = get_sync_session()
+        logger.info("Getting all points")
+        points = session.query(Point).all()
+        logger.debug("Points: {}".format(points))
+        return points

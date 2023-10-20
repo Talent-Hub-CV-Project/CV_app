@@ -1,5 +1,7 @@
 from logging import Logger
 
+import numpy as np
+import numpy.typing as npt
 from PIL.Image import Image
 from ultralytics import YOLO
 from ultralytics.engine.results import Results  # type: ignore[import-untyped]
@@ -14,5 +16,5 @@ class Model:
     def __init__(self) -> None:
         pass
 
-    def predict(self, image: Image) -> list[Results]:
+    def predict(self, image: npt.NDArray[np.int_] | Image) -> list[Results]:
         return self.model(image)  # type: ignore[no-any-return]
