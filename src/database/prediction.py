@@ -1,8 +1,9 @@
+from typing import TYPE_CHECKING
+
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.database.base import Base
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from src.database.model_class import ModelPredictionClass
