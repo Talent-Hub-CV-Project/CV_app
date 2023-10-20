@@ -1,9 +1,14 @@
+from sqlalchemy.orm import Session
+
 from src.database import ModelPredictionClass, get_sync_session
 
 
-class ModelClasses:
-    @classmethod
-    def create_classes(cls) -> None:
+class ModelClassRepo:
+    @staticmethod
+    def create_classes(session: Session | None = None) -> None:
+        if session is None:
+            session = get_sync_session()
+        # taken from yolo output
         classes = {
             0: "person",
             1: "bicycle",
@@ -86,10 +91,19 @@ class ModelClasses:
             78: "hair drier",
             79: "toothbrush",
         }
-        session = get_sync_session()
         classes_in_db = session.query(ModelPredictionClass).count()
         if classes_in_db != 0:
             return
         for class_id, class_name in classes.items():
             session.add(ModelPredictionClass(id=class_id, name=class_name))
         session.commit()
+
+    @staticmethod
+    def get_model_prediction_class(cls: int, session: Session | None = None) -> ModelPredictionClass:
+        if session is None:
+            session = get_sync_session()
+
+        prediction_class = session.query(ModelPredictionClass).filter(ModelPredictionClass.id == cls).first()
+        if prediction_class is None:
+            raise ValueError(f"Prediction class with id {cls} not found")
+        return prediction_class

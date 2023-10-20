@@ -9,7 +9,7 @@ from src.logger import get_logger
 
 class Model:
     logger: Logger = get_logger(__name__)
-    model: YOLO = YOLO("models/yolov8n.onnx")
+    model: YOLO = YOLO("models/yolov8n.onnx", task="detect")
 
     def __init__(self) -> None:
         pass

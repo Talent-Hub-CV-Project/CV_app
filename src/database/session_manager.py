@@ -27,4 +27,5 @@ class SessionManager:
 
 def get_sync_session() -> Session:
     session_maker = SessionManager().get_session_maker()
-    return session_maker()
+    with session_maker() as session:
+        return session

@@ -6,7 +6,8 @@ from sqlalchemy_utils import create_database, database_exists
 
 from src.database.session_manager import SessionManager
 from src.model import Model
-from src.repository.model_classes import ModelClasses
+from src.repository.model_prediction import ModelClassRepo, PredictionRepo
+from src.repository.point import PointRepo
 from src.settings import Settings
 
 settings = Settings()
@@ -18,15 +19,16 @@ def run_upgrade(connection: Connection, cfg: Config) -> None:
 
 
 def init_database() -> None:
-    print(settings.postgres_dsn)
     if not database_exists(settings.postgres_dsn):
         create_database(settings.postgres_dsn)
     config = Config("alembic.ini")
     config.attributes["configure_logger"] = False
     engine = SessionManager().engine
-    with engine.begin() as conn:
-        run_upgrade(conn, config)
-    ModelClasses.create_classes()
+    with engine.connect() as conn:
+        with conn.begin():
+            run_upgrade(conn, config)
+            conn.commit()
+    ModelClassRepo.create_classes()
 
 
 if __name__ == "__main__":
@@ -35,3 +37,5 @@ if __name__ == "__main__":
     img = Image.open("bus.jpg")
     res = model.predict(img)
     print(res)
+    PointRepo.create_points([("test", 1, 1)])
+    PredictionRepo.create_model_prediction(res, 1)
