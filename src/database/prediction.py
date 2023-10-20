@@ -16,9 +16,9 @@ class Prediction(Base):
     id: Mapped[int] = mapped_column(primary_key=True, index=True, autoincrement=True)
 
     picture_id: Mapped[int] = mapped_column(ForeignKey("picture.id"), index=True)
-    picture: Mapped["Picture"] = relationship("Picture", backref="predictions")
+    picture_predicted: Mapped["Picture"] = relationship(back_populates="picture_predictions")
     prediction_class_id: Mapped[int] = mapped_column(ForeignKey("model_prediction_class.id"), index=True)
-    prediction_class: Mapped["ModelPredictionClass"] = relationship("ModelPredictionClass", backref="predictions")
+    prediction_class: Mapped["ModelPredictionClass"] = relationship(back_populates="class_predictions")
 
     probability: Mapped[float] = mapped_column(nullable=False)
     box_x1: Mapped[float] = mapped_column(nullable=False)

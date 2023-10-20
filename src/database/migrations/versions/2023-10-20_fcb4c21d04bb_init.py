@@ -1,8 +1,8 @@
 """init
 
-Revision ID: 49413255d8ff
+Revision ID: fcb4c21d04bb
 Revises:
-Create Date: 2023-10-20 11:53:37.816053
+Create Date: 2023-10-20 12:54:34.537761
 
 """
 
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision: str = "49413255d8ff"
+revision: str = "fcb4c21d04bb"
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -46,7 +46,6 @@ def upgrade() -> None:
         sa.Column("name", sa.String(), nullable=False),
         sa.Column("description", sa.String(), nullable=True),
         sa.Column("image", sa.LargeBinary(), nullable=False),
-        sa.Column("prediction_class_id", sa.Integer(), nullable=False),
         sa.Column("prediction_probability", sa.Float(), nullable=False),
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.Column("point_id", sa.Integer(), nullable=False),

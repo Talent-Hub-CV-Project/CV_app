@@ -12,7 +12,7 @@ class Point(Base):
     latitude: Mapped[float] = mapped_column(nullable=False)
     longitude: Mapped[float] = mapped_column(nullable=False)
     description: Mapped[str] = mapped_column(nullable=True)
-    pictures: Mapped[list[Picture]] = relationship("Picture", back_populates="point_id")
+    point_pictures: Mapped[list[Picture]] = relationship(back_populates="picture_point")
 
     def __repr__(self) -> str:
         return f"<Point(id={self.id}, name={self.name})>"

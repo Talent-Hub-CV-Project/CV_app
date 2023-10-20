@@ -1,9 +1,12 @@
 from alembic.command import upgrade
 from alembic.config import Config
+from PIL import Image
 from sqlalchemy import Connection
 from sqlalchemy_utils import create_database, database_exists
 
 from src.database.session_manager import SessionManager
+from src.model import Model
+from src.repository.model_classes import ModelClasses
 from src.settings import Settings
 
 settings = Settings()
@@ -23,8 +26,12 @@ def init_database() -> None:
     engine = SessionManager().engine
     with engine.begin() as conn:
         run_upgrade(conn, config)
-        # conn.run(run_upgrade, config)
+    ModelClasses.create_classes()
 
 
 if __name__ == "__main__":
     init_database()
+    model = Model()
+    img = Image.open("bus.jpg")
+    res = model.predict(img)
+    print(res)

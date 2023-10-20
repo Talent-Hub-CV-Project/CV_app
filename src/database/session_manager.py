@@ -25,6 +25,6 @@ class SessionManager:
         self.engine = create_engine(Settings().postgres_dsn, echo=True)
 
 
-def get_sync() -> Session:
+def get_sync_session() -> Session:
     session_maker = SessionManager().get_session_maker()
     return session_maker()
