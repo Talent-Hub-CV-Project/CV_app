@@ -11,10 +11,9 @@ from src.logger import get_logger
 
 class Model:
     logger: Logger = get_logger(__name__)
-    model: YOLO = YOLO("models/yolov8n.onnx", task="detect")
 
-    def __init__(self) -> None:
-        pass
+    def __init__(self, model_path: str = "models/yolov8n.onnx") -> None:
+        self.model = YOLO(model_path, task="detect")
 
     def predict(self, image: npt.NDArray[np.int_] | Image) -> list[Results]:
         return self.model(image)  # type: ignore[no-any-return]

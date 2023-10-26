@@ -1,23 +1,34 @@
+import tempfile
+
 import gradio as gr
-import numpy as np
-import numpy.typing as npt
+import pandas as pd
 import plotly.graph_objects as go
 
+from src.database import get_sync_session
 from src.model import Model
 from src.repository.model_prediction import PredictionRepo
 from src.repository.point import PointRepo
 
 
 def filter_map() -> go.Figure:
-    points = PointRepo.get_points()
-    name = [point.name for point in points]
+    session = get_sync_session()
+    points = PointRepo.get_points(session)
     latitude = [point.latitude for point in points]
     longitude = [point.longitude for point in points]
     m_latitude = sum(latitude) / len(latitude)
     m_longitude = sum(longitude) / len(longitude)
+
+    points_str = []
+    for point in points:
+        animals = PredictionRepo.load_animals_at_point(point.id)
+        point_str = f"<b>Name</b>: {point.name}<br><b>Animals</b>:<br>"
+        for animal_name, count in animals:
+            point_str += f"{animal_name}: {count}<br>"
+        points_str.append(point_str)
+
     fig = go.Figure(
         go.Scattermapbox(
-            customdata=name,
+            customdata=points_str,
             lat=latitude,
             lon=longitude,
             mode="markers",
@@ -47,16 +58,29 @@ def filter_map() -> go.Figure:
 model = Model()
 
 
-def process_image(image: npt.NDArray[np.int_], point: int) -> tuple[npt.NDArray[np.int_], list[tuple[tuple[int], str]]]:
-    res = model.predict(image)
-    PredictionRepo.create_model_prediction(res, point)
-    res_image = res[0]
-    boxes = res_image.boxes.xyxy.tolist()
-    labels = res_image.boxes.cls.tolist()
-    labels_names = [res_image.names[label] for label in labels]
-    boxes = [tuple(int(b) for b in box) for box in boxes]
-    box_label = [(box, label) for box, label in zip(boxes, labels_names)]
-    return image, box_label
+def process_image(images: list[tempfile._TemporaryFileWrapper], point: int, progress=gr.Progress()) -> pd.DataFrame:
+    #  ,
+    output_results = []
+    for image in progress.tqdm(images):
+        results = model.predict(image.name)
+        PredictionRepo.create_model_prediction(results, point)
+        for result in results:
+            for box in result.boxes:
+                prob = box.conf.tolist()[0]
+                cls = box.cls.tolist()[0]
+                class_name = result.names[cls]
+                output_results.append({
+                    "image": image.name.split("/")[-1],
+                    "probability": prob,
+                    "class": class_name,
+                })
+    return pd.DataFrame(output_results)
+
+
+def dropdown_changed(point: int) -> None:
+    results = pd.DataFrame(PredictionRepo.load_predictions_at_point(point))
+    results["filename"] = results["filename"].str.split("/").str[-1]
+    return results
 
 
 def create_interface() -> gr.Blocks:
@@ -65,13 +89,16 @@ def create_interface() -> gr.Blocks:
     with gr.Blocks() as demo:
         with gr.Row():
             with gr.Column():
-                loaded_image = gr.Image(type="numpy", label="Input Image", show_download_button=False)
+                files = gr.Files(label="Upload photo")
                 point = gr.Dropdown(choices=points_dropdown)
-            predicted_image = gr.AnnotatedImage(label="Output Image")
+            pred_table = gr.DataFrame(label="Loaded images")
         with gr.Row():
             submit = gr.Button(value="Submit photo", variant="primary")
-            clear = gr.ClearButton(value="Clear photo", components=[loaded_image, predicted_image])  # noqa: F841
-        map = gr.Plot()
+            clear = gr.ClearButton(value="Clear photo", components=[files, pred_table])  # noqa: F841
+        with gr.Row():
+            map = gr.Plot()
+            animals_at_point = gr.DataFrame(label="Animals at point")
         demo.load(filter_map, [], map)
-        submit.click(process_image, [loaded_image, point], predicted_image)
+        submit.click(process_image, [files, point], pred_table, show_progress=True)
+        point.select(dropdown_changed, [point], animals_at_point)
     return demo

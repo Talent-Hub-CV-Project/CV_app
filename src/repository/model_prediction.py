@@ -1,7 +1,8 @@
+from sqlalchemy import select, func
 from sqlalchemy.orm import Session
 from ultralytics.engine.results import Results  # type: ignore[import-untyped]
 
-from src.database import Picture, Prediction, get_sync_session
+from src.database import Picture, Prediction, get_sync_session, ModelPredictionClass
 from src.logger import get_logger
 from src.repository.model_classes import ModelClassRepo
 from src.repository.point import PointRepo
@@ -41,3 +42,20 @@ class PredictionRepo:
                     )
                 )
             session.commit()
+
+    @staticmethod
+    def load_predictions_at_point(point_id: int, session: Session | None = None) -> list[tuple[str, float, str]]:
+        if not session:
+            session = get_sync_session()
+        query = select(Picture.name.label("filename"), Prediction.probability,
+                       ModelPredictionClass.name.label("class")).join(Picture).where(Picture.point_id == point_id).join(
+            ModelPredictionClass)
+        return session.execute(query).all()
+
+    @staticmethod
+    def load_animals_at_point(point_id: int, session: Session | None = None) -> list[tuple[str, int]]:
+        if not session:
+            session = get_sync_session()
+        query = select(ModelPredictionClass.name, func.count(Prediction.id)).join(ModelPredictionClass).join(
+            Picture).where(Picture.point_id == point_id).group_by(ModelPredictionClass.name)
+        return session.execute(query).all()
