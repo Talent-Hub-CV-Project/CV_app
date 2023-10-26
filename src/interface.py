@@ -8,6 +8,7 @@ from src.database import get_sync_session
 from src.model import Model
 from src.repository.model_prediction import PredictionRepo
 from src.repository.point import PointRepo
+from src.settings import Settings
 
 
 def filter_map() -> go.Figure:
@@ -55,11 +56,11 @@ def filter_map() -> go.Figure:
     return fig
 
 
-model = Model()
+settings = Settings()
+model = Model(settings.model_path)
 
 
 def process_image(images: list[tempfile._TemporaryFileWrapper], point: int, progress=gr.Progress()) -> pd.DataFrame:
-    #  ,
     output_results = []
     for image in progress.tqdm(images):
         results = model.predict(image.name)
@@ -69,15 +70,17 @@ def process_image(images: list[tempfile._TemporaryFileWrapper], point: int, prog
                 prob = box.conf.tolist()[0]
                 cls = box.cls.tolist()[0]
                 class_name = result.names[cls]
-                output_results.append({
-                    "image": image.name.split("/")[-1],
-                    "probability": prob,
-                    "class": class_name,
-                })
+                output_results.append(
+                    {
+                        "image": image.name.split("/")[-1],
+                        "probability": prob,
+                        "class": class_name,
+                    }
+                )
     return pd.DataFrame(output_results)
 
 
-def dropdown_changed(point: int) -> None:
+def dropdown_changed(point: int) -> pd.DataFrame:
     results = pd.DataFrame(PredictionRepo.load_predictions_at_point(point))
     results["filename"] = results["filename"].str.split("/").str[-1]
     return results
@@ -99,6 +102,6 @@ def create_interface() -> gr.Blocks:
             map = gr.Plot()
             animals_at_point = gr.DataFrame(label="Animals at point")
         demo.load(filter_map, [], map)
-        submit.click(process_image, [files, point], pred_table, show_progress=True)
+        submit.click(process_image, [files, point], pred_table, show_progress=not settings.is_docker)
         point.select(dropdown_changed, [point], animals_at_point)
     return demo

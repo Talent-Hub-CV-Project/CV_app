@@ -34,8 +34,9 @@ format:
 
 .PHONY: export-dependencies
 export-dependencies:
-	poetry export -f requirements.txt --output requirements/requirements.txt
-	poetry export -f requirements.txt --output requirements/requirements-dev.txt --with=dev
+    # pip can't install cuda libraries with missing hashes, because indirect install from poetry
+	poetry export -f requirements.txt --output requirements/requirements.txt --without-hashes
+	poetry export -f requirements.txt --output requirements/requirements-dev.txt --with=dev --without-hashes
 
 .PHONY: database
 database:

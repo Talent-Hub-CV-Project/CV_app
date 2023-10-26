@@ -17,3 +17,18 @@ services:
       retries: 5
     ports:
       - "5432:5432"
+
+  app:
+    build: .
+    environment:
+      POSTGRES_HOST: "database"
+      MODEL_PATH: "/models/yolov8n.onnx"
+      CONFIG_PATH: "../alembic.ini"
+      IS_DOCKER: "TRUE"
+    command: ["python", "main.py"]
+    env_file:
+      - .env
+    volumes:
+      - ./models:/models
+    ports:
+      - "7000:7000"

@@ -19,8 +19,10 @@ def run_upgrade(connection: Connection, cfg: Config) -> None:
 def init_database() -> None:
     if not database_exists(settings.postgres_dsn):
         create_database(settings.postgres_dsn)
-    config = Config("alembic.ini")
+    config = Config(settings.config_path)
     config.attributes["configure_logger"] = False
+    if settings.config_path.startswith("../"):
+        config.set_main_option("script_location", "/src/database/migrations")
     engine = SessionManager().engine
     with engine.connect() as conn:
         with conn.begin():
@@ -32,4 +34,8 @@ def init_database() -> None:
 if __name__ == "__main__":
     init_database()
     interface = create_interface()
-    interface.queue().launch()
+    if not settings.is_docker:
+        interface = interface.queue()
+    else:
+        print("\x1b[31mDOCKER NOT WORKING, because can't start gradio interface\x1b[0m")
+    interface.launch(server_port=settings.port, share=True)
