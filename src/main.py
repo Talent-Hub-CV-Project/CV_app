@@ -38,4 +38,5 @@ if __name__ == "__main__":
         interface = interface.queue()
     else:
         print("\x1b[31mDOCKER NOT WORKING, because can't start gradio interface\x1b[0m")
-    interface.launch(server_port=settings.port, share=True)
+        exit()
+    interface.launch(server_port=settings.port)
