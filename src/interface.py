@@ -21,7 +21,7 @@ def filter_map() -> go.Figure:
 
     points_str = []
     for point in points:
-        animals = PredictionRepo.load_animals_at_point(point.id)
+        animals = PredictionRepo.load_animals_at_point(point.id, session)
         point_str = f"<b>Name</b>: {point.name}<br><b>Animals</b>:<br>"
         for animal_name, count in animals:
             point_str += f"{animal_name}: {count}<br>"
@@ -52,7 +52,7 @@ def filter_map() -> go.Figure:
             zoom=9,
         ),
     )
-
+    session.close()
     return fig
 
 
@@ -62,9 +62,10 @@ model = Model(settings.model_path)
 
 def process_image(images: list[tempfile._TemporaryFileWrapper], point: int, progress=gr.Progress()) -> pd.DataFrame:
     output_results = []
+    session = get_sync_session()
     for image in progress.tqdm(images):
         results = model.predict(image.name)
-        PredictionRepo.create_model_prediction(results, point)
+        PredictionRepo.create_model_prediction(results, point, session)
         for result in results:
             for box in result.boxes:
                 prob = box.conf.tolist()[0]
@@ -77,12 +78,14 @@ def process_image(images: list[tempfile._TemporaryFileWrapper], point: int, prog
                         "class": class_name,
                     }
                 )
+    session.close()
     return pd.DataFrame(output_results)
 
 
 def dropdown_changed(point: int) -> pd.DataFrame:
     results = pd.DataFrame(PredictionRepo.load_predictions_at_point(point))
-    results["filename"] = results["filename"].str.split("/").str[-1]
+    if "filename" in results.columns:
+        results["filename"] = results["filename"].str.split("/").str[-1]
     return results
 
 
@@ -101,7 +104,9 @@ def create_interface() -> gr.Blocks:
         with gr.Row():
             map = gr.Plot()
             animals_at_point = gr.DataFrame(label="Animals at point")
-        demo.load(filter_map, [], map)
+        dep = demo.load(filter_map, [], map, every=1)
         submit.click(process_image, [files, point], pred_table, show_progress=not settings.is_docker)
         point.select(dropdown_changed, [point], animals_at_point)
+        map.change(filter_map, [], map, every=1, cancels=[dep])
+        # animals_at_point.change(dropdown_changed, [point], animals_at_point, every=1)
     return demo
